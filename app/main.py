@@ -1,7 +1,7 @@
 import os
 import uuid
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -83,7 +83,6 @@ async def upload_audio(request: Request, file: UploadFile = File(...)):
         (DATA_DIR / f"{rid}.summary.txt").write_text(summary, encoding="utf-8")
         return RedirectResponse(url=f"/detail/{rid}", status_code=303)
     except Exception as e:
-        # 写入错误信息，方便后续排查
         (DATA_DIR / f"{rid}.error.txt").write_text(str(e), encoding="utf-8")
         return templates.TemplateResponse("error.html", {
             "request": request,
@@ -91,6 +90,28 @@ async def upload_audio(request: Request, file: UploadFile = File(...)):
             "filename": Path(file.filename).name,
             "error": str(e),
         }, status_code=500)
+
+
+@app.post("/delete/{rid}")
+async def delete_record(rid: str):
+    # 删除上传音频
+    removed = False
+    for p in UPLOAD_DIR.glob(f"{rid}.*"):
+        try:
+            p.unlink()
+            removed = True
+        except Exception:
+            pass
+    # 删除转写与总结与错误文件
+    for suffix in [".txt", ".summary.txt", ".error.txt"]:
+        f = DATA_DIR / f"{rid}{suffix}"
+        if f.exists():
+            try:
+                f.unlink()
+            except Exception:
+                pass
+    # 重定向回首页
+    return RedirectResponse(url="/", status_code=303)
 
 
 # Expose uploads statically

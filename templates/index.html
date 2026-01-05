@@ -43,33 +43,40 @@
           <table>
             <thead>
               <tr>
-                <th>记录ID</th>
-                <th>文件名</th>
-                <th>转写</th>
-                <th>总结</th>
-                <th>查看</th>
+                <th>ID</th>
+                <th class="table-filename">文件名</th>
+                <th class="table-status">转写</th>
+                <th class="table-status">总结</th>
+                <th class="table-actions">操作</th>
               </tr>
             </thead>
             <tbody>
               {% for r in records %}
               <tr>
                 <td>{{ r.id }}</td>
-                <td>{{ r.filename }}</td>
-                <td>
+                <td class="table-filename"><span class="ellipsis" title="{{ r.filename }}">{{ r.filename }}</span></td>
+                <td class="table-status">
                   {% if r.has_transcript %}
                     <span class="badge success">已转写</span>
                   {% else %}
                     <span class="badge muted">待处理</span>
                   {% endif %}
                 </td>
-                <td>
+                <td class="table-status">
                   {% if r.has_summary %}
                     <span class="badge success">已总结</span>
                   {% else %}
                     <span class="badge muted">待处理</span>
                   {% endif %}
                 </td>
-                <td><a class="button secondary" href="/detail/{{ r.id }}">详情</a></td>
+                <td class="table-actions">
+                  <div class="flex">
+                    <a class="button secondary" href="/detail/{{ r.id }}">详情</a>
+                    <form action="/delete/{{ r.id }}" method="post" onsubmit="return confirm('确认删除该记录以及所有相关文件？');" style="display:inline;">
+                      <button class="button danger" type="submit">删除</button>
+                    </form>
+                  </div>
+                </td>
               </tr>
               {% endfor %}
             </tbody>
@@ -102,7 +109,6 @@
         submitBtn.textContent = '处理中…';
         statusMsg.style.display = 'block';
       });
-
 
       dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--accent)'; });
       dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = 'var(--border)'; });

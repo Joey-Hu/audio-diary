@@ -10,6 +10,7 @@
   --accent-dark: #f4b400;
   --accent-contrast: #0f172a;
   --success: #16a34a;
+  --danger: #dc2626;
 }
 
 * { box-sizing: border-box; }
@@ -62,7 +63,12 @@ body {
 .table-wrap { margin-top: 26px; }
 table { width: 100%; border-collapse: collapse; border-radius: 12px; overflow: hidden; }
 thead th { background: #fafafa; color: var(--muted); font-weight: 600; padding: 12px; border-bottom: 1px solid var(--border); text-align: left; }
-tbody td { padding: 12px; border-bottom: 1px solid var(--border); }
+tbody td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+/* fixed widths for table columns */
+.table-filename { max-width: 320px; }
+.table-filename .ellipsis { display: inline-block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.table-actions { width: 200px; }
+.table-status { width: 140px; }
 tbody tr:hover { background: #f9fafb; }
 .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
 .badge.success { background: rgba(22,163,74,0.12); color: var(--success); border: 1px solid rgba(22,163,74,0.28); }

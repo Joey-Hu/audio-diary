@@ -25,10 +25,23 @@ def _deepseek_summary(text: str, lang: str) -> Optional[str]:
     base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
     model = os.getenv("DEEPSEEK_MODEL", "deepseek-reasoner")
     client = OpenAI(api_key=api_key, base_url=base_url)
-    temperature = float(os.getenv("SUMMARIZE_TEMPERATURE", "0.2"))
+    # 默认温度改为 0.1，更稳定简洁；可通过 SUMMARIZE_TEMPERATURE 覆盖
+    temperature = float(os.getenv("SUMMARIZE_TEMPERATURE", "0.1"))
     prompt = (
-        "请将下面的内容进行结构化总结，给出要点、行动项和结论：\n" if lang == "zh-cn" else
-        "Summarize the following transcript with bullet points, action items, and conclusions:\n"
+        "请根据下面的转写文本生成结构化总结，严格按照以下格式输出：\n"
+        "标题：\n"
+        "要点：按项目符号列出（3-8条）\n"
+        "行动项：按项目符号列出（如无则写\"无\"）\n"
+        "结论：1-2段概括\n"
+        "要求：用中文、简洁清晰、避免无关内容。\n\n"
+        if lang == "zh-cn"
+        else
+        "Based on the transcript below, produce a structured summary with the following sections:\n"
+        "Title:\n"
+        "Key Points: bullet list (3-8 items)\n"
+        "Action Items: bullet list (use \"None\" if no clear actions)\n"
+        "Conclusions: 1-2 short paragraphs\n"
+        "Constraints: concise, clear, no irrelevant content.\n\n"
     ) + text
     try:
         resp = client.chat.completions.create(
@@ -55,10 +68,23 @@ def _openai_summary(text: str, lang: str) -> Optional[str]:
         return None
     client = OpenAI(api_key=api_key)
     model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    temperature = float(os.getenv("SUMMARIZE_TEMPERATURE", "0.2"))
+    # 默认温度改为 0.1，更稳定简洁；可通过 SUMMARIZE_TEMPERATURE 覆盖
+    temperature = float(os.getenv("SUMMARIZE_TEMPERATURE", "0.1"))
     prompt = (
-        "请将下面的内容进行结构化总结，给出要点、行动项和结论：\n" if lang == "zh-cn" else
-        "Summarize the following transcript with bullet points, action items, and conclusions:\n"
+        "请根据下面的转写文本生成结构化总结，严格按照以下格式输出：\n"
+        "标题：\n"
+        "要点：按项目符号列出（3-8条）\n"
+        "行动项：按项目符号列出（如无则写\"无\"）\n"
+        "结论：1-2段概括\n"
+        "要求：用中文、简洁清晰、避免无关内容。\n\n"
+        if lang == "zh-cn"
+        else
+        "Based on the transcript below, produce a structured summary with the following sections:\n"
+        "Title:\n"
+        "Key Points: bullet list (3-8 items)\n"
+        "Action Items: bullet list (use \"None\" if no clear actions)\n"
+        "Conclusions: 1-2 short paragraphs\n"
+        "Constraints: concise, clear, no irrelevant content.\n\n"
     ) + text
     try:
         resp = client.chat.completions.create(
