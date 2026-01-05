@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Audio Diary - 详情</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-inner">
+        <a class="brand" href="/">
+          <span class="logo"></span>
+          <h1>Audio Diary</h1>
+        </a>
+        <div class="right muted">记录详情</div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="card">
+        <div class="flex">
+          <h2 style="margin:0;">{{ filename }}</h2>
+          <a class="button secondary right" href="/">返回首页</a>
+        </div>
+        <audio controls src="{{ audio_url }}"></audio>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>转写文本</h3>
+          <pre>{{ transcript }}</pre>
+        </div>
+        <div class="card">
+          <h3>AI总结</h3>
+          <pre>{{ summary }}</pre>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

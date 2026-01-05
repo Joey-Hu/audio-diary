@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Audio Diary</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-inner">
+        <a class="brand" href="/">
+          <span class="logo"></span>
+          <h1>Audio Diary</h1>
+        </a>
+        <div class="right muted">上传音频，自动转写与总结</div>
+      </div>
+    </header>
+
+    <div class="container">
+      <section class="upload">
+        <div class="card">
+          <h2>上传音频</h2>
+          <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+            <label class="dropzone" id="dropzone">
+              <input type="file" name="file" accept="audio/*" required id="fileInput" />
+              <div>拖拽音频到此处或点击选择文件</div>
+              <div class="hint">支持 wav / mp3 / m4a / aac / flac / ogg</div>
+              <div id="fileName" class="muted space-top">未选择文件</div>
+            </label>
+            <div class="flex space-top">
+              <button class="button" type="submit" id="submitBtn" disabled>上传并处理</button>
+              <button class="button secondary" type="button" id="clearBtn">清除选择</button>
+            </div>
+            <div id="statusMsg" class="muted space-top" style="display:none;">正在上传并处理，请稍候…</div>
+          </form>
+        </div>
+      </section>
+
+      <section class="list table-wrap">
+        <div class="card">
+          <h2>历史记录</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>记录ID</th>
+                <th>文件名</th>
+                <th>转写</th>
+                <th>总结</th>
+                <th>查看</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in records %}
+              <tr>
+                <td>{{ r.id }}</td>
+                <td>{{ r.filename }}</td>
+                <td>
+                  {% if r.has_transcript %}
+                    <span class="badge success">已转写</span>
+                  {% else %}
+                    <span class="badge muted">待处理</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if r.has_summary %}
+                    <span class="badge success">已总结</span>
+                  {% else %}
+                    <span class="badge muted">待处理</span>
+                  {% endif %}
+                </td>
+                <td><a class="button secondary" href="/detail/{{ r.id }}">详情</a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const fileInput = document.getElementById('fileInput');
+      const fileName = document.getElementById('fileName');
+      const submitBtn = document.getElementById('submitBtn');
+      const statusMsg = document.getElementById('statusMsg');
+      const uploadForm = document.getElementById('uploadForm');
+      const dropzone = document.getElementById('dropzone');
+      const clearBtn = document.getElementById('clearBtn');
+
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files && fileInput.files.length > 0) {
+          fileName.textContent = fileInput.files[0].name;
+          submitBtn.disabled = false;
+        } else {
+          fileName.textContent = '未选择文件';
+          submitBtn.disabled = true;
+        }
+      });
+
+      uploadForm.addEventListener('submit', () => {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '处理中…';
+        statusMsg.style.display = 'block';
+      });
+
+      dropzone.addEventListener('click', () => fileInput.click());
+      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--primary)'; });
+      dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = 'var(--border)'; });
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          fileInput.files = e.dataTransfer.files;
+          const evt = new Event('change');
+          fileInput.dispatchEvent(evt);
+        }
+      });
+
+      clearBtn.addEventListener('click', () => {
+        fileInput.value = '';
+        fileName.textContent = '未选择文件';
+        submitBtn.disabled = true;
+      });
+    </script>
+  </body>
+</html>
