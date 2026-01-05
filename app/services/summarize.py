@@ -3,14 +3,6 @@ from typing import Optional
 
 from langdetect import detect
 
-# Optional OpenAI summarization
-_USE_OPENAI = False
-try:
-    import openai
-    _USE_OPENAI = True
-except Exception:
-    _USE_OPENAI = False
-
 # Local summarizers
 from sumy.nlp.tokenizers import Tokenizer
 from sumy.parsers.plaintext import PlaintextParser
@@ -21,23 +13,61 @@ from sumy.utils import get_stop_words
 from textrank4zh import TextRank4Sentence
 
 
-def _openai_summary(text: str, lang: str) -> Optional[str]:
-    api_key = os.getenv("OPENAI_API_KEY")
+def _deepseek_summary(text: str, lang: str) -> Optional[str]:
+    """使用 DeepSeek API 进行总结，需设置 DEEPSEEK_API_KEY。"""
+    api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
         return None
-    # OpenAI python client v1
-    from openai import OpenAI
-    client = OpenAI(api_key=api_key)
+    try:
+        from openai import OpenAI
+    except Exception:
+        return None
+    base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    model = os.getenv("DEEPSEEK_MODEL", "deepseek-reasoner")
+    client = OpenAI(api_key=api_key, base_url=base_url)
+    temperature = float(os.getenv("SUMMARIZE_TEMPERATURE", "0.2"))
     prompt = (
         "请将下面的内容进行结构化总结，给出要点、行动项和结论：\n" if lang == "zh-cn" else
         "Summarize the following transcript with bullet points, action items, and conclusions:\n"
     ) + text
     try:
         resp = client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            messages=[{"role": "system", "content": "You are a helpful summarization assistant."},
-                      {"role": "user", "content": prompt}],
-            temperature=0.2,
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a helpful summarization assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=temperature,
+        )
+        return resp.choices[0].message.content
+    except Exception:
+        return None
+
+
+def _openai_summary(text: str, lang: str) -> Optional[str]:
+    """使用 OpenAI 进行总结，需设置 OPENAI_API_KEY。"""
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return None
+    try:
+        from openai import OpenAI
+    except Exception:
+        return None
+    client = OpenAI(api_key=api_key)
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    temperature = float(os.getenv("SUMMARIZE_TEMPERATURE", "0.2"))
+    prompt = (
+        "请将下面的内容进行结构化总结，给出要点、行动项和结论：\n" if lang == "zh-cn" else
+        "Summarize the following transcript with bullet points, action items, and conclusions:\n"
+    ) + text
+    try:
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": "You are a helpful summarization assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=temperature,
         )
         return resp.choices[0].message.content
     except Exception:
@@ -58,7 +88,6 @@ def _textrank_zh(text: str, sentences_count: int = 5) -> str:
     tr4s = TextRank4Sentence()
     tr4s.analyze(text=text, lower=True)
     sents = tr4s.get_key_sentences(num=sentences_count)
-    # tr4s returns dicts with 'sentence'
     return "\n".join(s['sentence'] for s in sents)
 
 
@@ -70,14 +99,19 @@ def summarize_text(text: str) -> str:
     except Exception:
         lang_code = "en"
     is_zh = lang_code.startswith("zh")
+    lang_tag = "zh-cn" if is_zh else "en"
 
-    # Try OpenAI first if available
-    if _USE_OPENAI and os.getenv("OPENAI_API_KEY"):
-        ai_sum = _openai_summary(text, "zh-cn" if is_zh else "en")
-        if ai_sum:
-            return ai_sum
+    # 优先 DeepSeek
+    ds_sum = _deepseek_summary(text, lang_tag)
+    if ds_sum:
+        return ds_sum
 
-    # Fall back to local summarizers
+    # 其次 OpenAI
+    oa_sum = _openai_summary(text, lang_tag)
+    if oa_sum:
+        return oa_sum
+
+    # 本地兜底
     if is_zh:
         return _textrank_zh(text)
     else:

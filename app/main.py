@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI, Request, UploadFile, File, Form
+from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -68,20 +68,29 @@ async def detail(request: Request, rid: str):
 
 
 @app.post("/upload")
-async def upload_audio(file: UploadFile = File(...)):
+async def upload_audio(request: Request, file: UploadFile = File(...)):
     suffix = Path(file.filename).suffix.lower()
     if suffix not in [".wav", ".mp3", ".m4a", ".aac", ".flac", ".ogg"]:
         return HTMLResponse("仅支持音频文件: wav/mp3/m4a/aac/flac/ogg", status_code=400)
     rid = uuid.uuid4().hex
     target = UPLOAD_DIR / f"{rid}{suffix}"
-    with open(target, "wb") as f:
-        f.write(await file.read())
-    # do background processing synchronously here for simplicity
-    transcript = transcribe_audio(str(target))
-    (DATA_DIR / f"{rid}.txt").write_text(transcript, encoding="utf-8")
-    summary = summarize_text(transcript)
-    (DATA_DIR / f"{rid}.summary.txt").write_text(summary, encoding="utf-8")
-    return RedirectResponse(url=f"/detail/{rid}", status_code=303)
+    try:
+        with open(target, "wb") as f:
+            f.write(await file.read())
+        transcript = transcribe_audio(str(target))
+        (DATA_DIR / f"{rid}.txt").write_text(transcript, encoding="utf-8")
+        summary = summarize_text(transcript)
+        (DATA_DIR / f"{rid}.summary.txt").write_text(summary, encoding="utf-8")
+        return RedirectResponse(url=f"/detail/{rid}", status_code=303)
+    except Exception as e:
+        # 写入错误信息，方便后续排查
+        (DATA_DIR / f"{rid}.error.txt").write_text(str(e), encoding="utf-8")
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "rid": rid,
+            "filename": Path(file.filename).name,
+            "error": str(e),
+        }, status_code=500)
 
 
 # Expose uploads statically

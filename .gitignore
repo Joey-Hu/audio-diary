@@ -1,0 +1,17 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Environments
+.venv/
+venv/
+env/
+
+# Editors & OS
+.vscode/
+.idea/
+.DS_Store
+
+# Project runtime data (do not upload)
+uploads/
+data/

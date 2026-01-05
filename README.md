@@ -7,7 +7,8 @@
 - 存储上传的录音文件到 `uploads/`
 - 使用 Faster-Whisper 自动转写为文本（默认 `tiny` 模型、CPU）
 - 总结转写文本：
-  - 优先使用 OpenAI（如设置 `OPENAI_API_KEY`）
+  - 优先使用 DeepSeek（设置 `DEEPSEEK_API_KEY`，可选 `DEEPSEEK_BASE_URL` 与 `DEEPSEEK_MODEL`）
+  - 其次使用 OpenAI（如设置 `OPENAI_API_KEY`）
   - 无法使用时，中文走 TextRank4zh，英文走 Sumy TextRank
 - 浏览历史记录，查看详情页，包含音频播放器、转写与总结
 

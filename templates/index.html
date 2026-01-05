@@ -103,8 +103,8 @@
         statusMsg.style.display = 'block';
       });
 
-      dropzone.addEventListener('click', () => fileInput.click());
-      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--primary)'; });
+
+      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--accent)'; });
       dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = 'var(--border)'; });
       dropzone.addEventListener('drop', (e) => {
         e.preventDefault();
