@@ -10,40 +10,41 @@
     <header class="header">
       <div class="header-inner">
         <a class="brand" href="/">
-          <span class="logo"></span>
+          <span class="logo">AD</span>
           <h1>Audio Diary</h1>
         </a>
-        <div class="right muted">上传音频，自动转写与总结</div>
+        <div class="right subtle">上传音频，自动转写与总结</div>
       </div>
     </header>
 
     <div class="container">
       <section class="upload">
         <div class="card">
-          <h2>上传音频</h2>
-          <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+          <h2 class="section-title">上传音频</h2>
+          <div class="subtle">支持 wav / mp3 / m4a / aac / flac / ogg</div>
+          <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data" class="space-top">
             <label class="dropzone" id="dropzone">
               <input type="file" name="file" accept="audio/*" required id="fileInput" />
               <div>拖拽音频到此处或点击选择文件</div>
-              <div class="hint">支持 wav / mp3 / m4a / aac / flac / ogg</div>
-              <div id="fileName" class="muted space-top">未选择文件</div>
+              <div class="hint">建议清晰人声，效果更好</div>
+              <div id="fileName" class="subtle space-top">未选择文件</div>
             </label>
             <div class="flex space-top">
               <button class="button" type="submit" id="submitBtn" disabled>上传并处理</button>
               <button class="button secondary" type="button" id="clearBtn">清除选择</button>
             </div>
-            <div id="statusMsg" class="muted space-top" style="display:none;">正在上传并处理，请稍候…</div>
+            <div id="statusMsg" class="subtle space-top" style="display:none;">正在上传并处理，请稍候…</div>
           </form>
         </div>
       </section>
 
       <section class="list table-wrap">
         <div class="card">
-          <h2>历史记录</h2>
+          <h2 class="section-title">历史记录</h2>
           <table>
             <thead>
               <tr>
-                <th>ID</th>
+                <th class="table-id">ID</th>
                 <th class="table-filename">文件名</th>
                 <th class="table-status">转写</th>
                 <th class="table-status">总结</th>
@@ -53,7 +54,7 @@
             <tbody>
               {% for r in records %}
               <tr>
-                <td>{{ r.id }}</td>
+                <td class="table-id"><span class="ellipsis" title="{{ r.id }}">{{ r.id }}</span></td>
                 <td class="table-filename"><span class="ellipsis" title="{{ r.filename }}">{{ r.filename }}</span></td>
                 <td class="table-status">
                   {% if r.has_transcript %}
@@ -110,8 +111,8 @@
         statusMsg.style.display = 'block';
       });
 
-      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = 'var(--accent)'; });
-      dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = 'var(--border)'; });
+      dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.borderColor = '#94a3b8'; });
+      dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = '#cbd5e1'; });
       dropzone.addEventListener('drop', (e) => {
         e.preventDefault();
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {

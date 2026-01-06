@@ -10,32 +10,103 @@
     <header class="header">
       <div class="header-inner">
         <a class="brand" href="/">
-          <span class="logo"></span>
+          <span class="logo">AD</span>
           <h1>Audio Diary</h1>
         </a>
-        <div class="right muted">记录详情</div>
+        <div class="right subtle">记录详情</div>
       </div>
     </header>
 
     <div class="container">
       <div class="card">
-        <div class="flex">
-          <h2 style="margin:0;">{{ filename }}</h2>
-          <a class="button secondary right" href="/">返回首页</a>
+        <div class="doc-block-title">
+          <div>
+            <div class="subtle">文件</div>
+            <h2 style="margin:6px 0 0; font-size:18px;">{{ filename }}</h2>
+          </div>
+          <a class="button secondary" href="/">返回</a>
         </div>
+        <div class="space-top"></div>
         <audio controls src="{{ audio_url }}"></audio>
       </div>
 
+      <div class="space-top"></div>
+
       <div class="grid">
         <div class="card">
-          <h3>转写文本</h3>
-          <pre>{{ transcript }}</pre>
+          <div class="doc-block-title">
+            <h3>转写文本</h3>
+            <div class="block-actions">
+              <button class="button secondary" type="button" onclick="copyText('transcriptText')">复制转写</button>
+              <button class="button secondary" type="button" onclick="toggleCollapse('transcriptBlock', this)">展开</button>
+            </div>
+          </div>
+          <pre id="transcriptBlock" class="collapsible"><span id="transcriptText">{{ transcript }}</span></pre>
         </div>
+
         <div class="card">
-          <h3>AI总结</h3>
-          <pre>{{ summary }}</pre>
+          <div class="doc-block-title">
+            <h3>总结</h3>
+            <div class="block-actions">
+              <button class="button secondary" type="button" onclick="copyText('summaryText')">复制总结</button>
+              <button class="button secondary" type="button" onclick="toggleCollapse('summaryBlock', this)">展开</button>
+            </div>
+          </div>
+          <pre id="summaryBlock" class="collapsible"><span id="summaryText">{{ summary }}</span></pre>
         </div>
       </div>
     </div>
+
+    <div id="toast" class="toast">已复制</div>
+
+    <script>
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 1200);
+      }
+
+      async function copyText(spanId) {
+        const el = document.getElementById(spanId);
+        const text = el ? el.textContent : '';
+        if (!text) {
+          showToast('内容为空');
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast('已复制到剪贴板');
+        } catch (e) {
+          // fallback
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          showToast('已复制到剪贴板');
+        }
+      }
+
+      function toggleCollapse(preId, btn) {
+        const el = document.getElementById(preId);
+        if (!el) return;
+        const open = el.classList.toggle('is-open');
+        btn.textContent = open ? '收起' : '展开';
+      }
+
+      // 如果文本较短，默认直接展开并隐藏“展开”按钮
+      function autoCollapse(preId, btnText) {
+        const pre = document.getElementById(preId);
+        if (!pre) return;
+        const textLen = pre.textContent.trim().length;
+        if (textLen < 450) {
+          pre.classList.add('is-open');
+        }
+      }
+      autoCollapse('transcriptBlock');
+      autoCollapse('summaryBlock');
+    </script>
   </body>
 </html>

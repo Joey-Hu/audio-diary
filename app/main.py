@@ -30,6 +30,9 @@ def list_records() -> List[dict]:
     records = []
     for item in UPLOAD_DIR.iterdir():
         if item.is_file():
+            # 忽略转写预处理产生的临时文件（历史遗留）
+            if item.name.endswith('.proc.wav'):
+                continue
             rid = item.stem
             transcript_file = DATA_DIR / f"{rid}.txt"
             summary_file = DATA_DIR / f"{rid}.summary.txt"
