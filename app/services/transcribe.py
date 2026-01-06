@@ -23,10 +23,13 @@ def get_model() -> WhisperModel:
     return _model_cache
 
 
-def _ffmpeg_preprocess(input_path: str) -> str:
-    """使用 ffmpeg 将音频转为 16kHz 单声道 wav，提升兼容性。若失败，返回原始路径。"""
+def _ffmpeg_preprocess(input_path: str, work_dir: str) -> str:
+    """使用 ffmpeg 将音频转为 16kHz 单声道 wav，输出到 work_dir 中，避免污染 uploads 列表。"""
     in_p = Path(input_path)
-    out_p = in_p.with_suffix(in_p.suffix + ".proc.wav")
+    work = Path(work_dir)
+    work.mkdir(parents=True, exist_ok=True)
+    out_p = work / f"{in_p.stem}.proc.wav"
+
     cmd = [
         "ffmpeg", "-y", "-i", str(in_p),
         "-ac", "1", "-ar", "16000", "-f", "wav", str(out_p)
@@ -39,16 +42,23 @@ def _ffmpeg_preprocess(input_path: str) -> str:
         return input_path
 
 
-def transcribe_audio(file_path: str) -> str:
-    # 预处理为标准 wav
-    processed_path = _ffmpeg_preprocess(file_path)
+def transcribe_audio(file_path: str, work_dir: str = "data/processed") -> str:
+    processed_path = _ffmpeg_preprocess(file_path, work_dir=work_dir)
     model = get_model()
-    segments, info = model.transcribe(processed_path, vad_filter=True)
-    text_parts = []
-    for segment in segments:
-        if segment and segment.text:
-            text_parts.append(segment.text)
-    text = " ".join(text_parts).strip()
-    if not text:
-        raise RuntimeError("未能从音频中获取有效文本，可能为静音或解码失败。")
-    return text
+    try:
+        segments, info = model.transcribe(processed_path, vad_filter=True)
+        text_parts = []
+        for segment in segments:
+            if segment and segment.text:
+                text_parts.append(segment.text)
+        text = " ".join(text_parts).strip()
+        if not text:
+            raise RuntimeError("未能从音频中获取有效文本，可能为静音或解码失败。")
+        return text
+    finally:
+        # 清理临时文件（仅当确实生成了 proc 文件且不等于原始文件）
+        try:
+            if processed_path != file_path and processed_path.endswith(".proc.wav"):
+                Path(processed_path).unlink(missing_ok=True)
+        except Exception:
+            pass

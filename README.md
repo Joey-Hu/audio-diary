@@ -1,4 +1,4 @@
-# Audio Diary (Python FastAPI)
+# Audio Diary (demo)
 
 一个开箱即用的音频上传、自动转写与AI总结的 Web 应用。
 
@@ -51,6 +51,37 @@ README.md               # 使用说明
    ```bash
    uvicorn app.main:app --reload --port 8000
    ```
+
+## 本地部署（后台运行）
+> 适用于你希望在本机长期运行，不依赖 IDE/终端前台窗口。
+
+1) 启动（默认 0.0.0.0:8000）
+```bash
+./scripts/start.sh
+```
+
+2) 查看状态
+```bash
+./scripts/status.sh
+```
+
+3) 查看日志
+```bash
+tail -f logs/server.out
+tail -f logs/server.err
+```
+
+4) 停止
+```bash
+./scripts/stop.sh
+```
+
+可选环境变量：
+- `PORT`：端口（默认 8000）
+- `HOST`：监听地址（默认 0.0.0.0）
+- `ENV_NAME`：conda 环境名（默认 audio-diary）
+- `LOG_DIR`：日志目录（默认 logs）
+
 
 5. 打开浏览器访问：
    - 首页：`http://localhost:8000/`
