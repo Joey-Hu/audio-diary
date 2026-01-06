@@ -23,6 +23,13 @@
           <div>
             <div class="subtle">文件</div>
             <h2 style="margin:6px 0 0; font-size:18px;">{{ filename }}</h2>
+            <div class="space-top"></div>
+            <div class="flex" style="gap:10px;">
+              <span class="subtle">任务状态：</span>
+              <span id="taskState" class="badge muted">{{ status.state }}</span>
+              <span id="taskError" class="subtle" style="display:none;"></span>
+            </div>
+
           </div>
           <a class="button secondary" href="/">返回</a>
         </div>
@@ -37,22 +44,49 @@
           <div class="doc-block-title">
             <h3>转写文本</h3>
             <div class="block-actions">
+              <form action="/tasks/{{ rid }}/rerun" method="post" style="display:inline;">
+                <input type="hidden" name="mode" value="transcribe" />
+                <button class="button secondary" type="submit">重新转写</button>
+              </form>
+              <form action="/tasks/{{ rid }}/rerun" method="post" style="display:inline;">
+                <input type="hidden" name="mode" value="all" />
+                <button class="button secondary" type="submit">全部重跑</button>
+              </form>
               <button class="button secondary" type="button" onclick="copyText('transcriptText')">复制转写</button>
               <button class="button secondary" type="button" onclick="toggleCollapse('transcriptBlock', this)">展开</button>
             </div>
           </div>
-          <pre id="transcriptBlock" class="collapsible"><span id="transcriptText">{{ transcript }}</span></pre>
+          <pre id="transcriptBlock" class="collapsible"><span id="transcriptText">{% if transcript %}{{ transcript }}{% else %}{% if status.state in ['queued','running','transcribing','summarizing'] %}<span id="transcriptPlaceholder" class="subtle">处理中…</span>{% endif %}{% endif %}</span></pre>
         </div>
 
         <div class="card">
           <div class="doc-block-title">
             <h3>总结</h3>
             <div class="block-actions">
+              <form action="/tasks/{{ rid }}/rerun" method="post" style="display:inline;">
+                <input type="hidden" name="mode" value="summarize" />
+                <button class="button secondary" type="submit">重新总结</button>
+              </form>
+              <form action="/tasks/{{ rid }}/rerun" method="post" style="display:inline;">
+                <input type="hidden" name="mode" value="all" />
+                <button class="button secondary" type="submit">全部重跑</button>
+              </form>
               <button class="button secondary" type="button" onclick="copyText('summaryText')">复制总结</button>
               <button class="button secondary" type="button" onclick="toggleCollapse('summaryBlock', this)">展开</button>
             </div>
           </div>
-          <pre id="summaryBlock" class="collapsible"><span id="summaryText">{{ summary }}</span></pre>
+
+          <pre id="summaryBlock" class="collapsible"><span id="summaryText">{% if summary %}{{ summary }}{% else %}{% if status.state in ['queued','running','transcribing','summarizing'] %}<span id="summaryPlaceholder" class="subtle">处理中…</span>{% endif %}{% endif %}</span></pre>
+
+          <div class="space-top"></div>
+
+          <form action="/detail/{{ rid }}/summary" method="post">
+            <div class="subtle">编辑总结（保存后会覆盖现有总结）</div>
+            <textarea name="summary" style="width:100%; min-height: 180px; margin-top: 8px;" placeholder="在这里编辑总结…">{{ summary }}</textarea>
+            <div class="flex space-top">
+              <button class="button" type="submit">保存总结</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
@@ -107,6 +141,76 @@
       }
       autoCollapse('transcriptBlock');
       autoCollapse('summaryBlock');
+
+      // ---- task polling ----
+      const initialState = '{{ status.state }}';
+      let lastState = initialState;
+
+      function updatePlaceholders(state) {
+        const transcriptPh = document.getElementById('transcriptPlaceholder');
+        const summaryPh = document.getElementById('summaryPlaceholder');
+
+        let msg = '处理中…';
+        if (state === 'queued') msg = '排队中…';
+        if (state === 'running') msg = '处理中…';
+        if (state === 'transcribing') msg = '转写中…';
+        if (state === 'summarizing') msg = '总结中…';
+
+        if (transcriptPh) transcriptPh.textContent = msg;
+        if (summaryPh) summaryPh.textContent = msg;
+      }
+
+      function setBadge(state) {
+        const el = document.getElementById('taskState');
+        if (!el) return;
+        el.textContent = state || 'unknown';
+        el.classList.remove('success');
+        el.classList.remove('muted');
+        // 复用现有 badge 样式：done=success，其余=muted
+        if (state === 'done') {
+          el.classList.add('success');
+        } else {
+          el.classList.add('muted');
+        }
+        updatePlaceholders(state);
+      }
+
+      function setError(msg) {
+        const el = document.getElementById('taskError');
+        if (!el) return;
+        if (msg) {
+          el.style.display = 'inline';
+          el.textContent = '错误：' + msg;
+        } else {
+          el.style.display = 'none';
+          el.textContent = '';
+        }
+      }
+
+      async function pollStatus() {
+        try {
+          const res = await fetch('/status/{{ rid }}', { cache: 'no-store' });
+          if (!res.ok) return;
+          const s = await res.json();
+          const state = s.state;
+          setBadge(state);
+          setError(s.error || '');
+
+          if (lastState !== 'done' && state === 'done') {
+            // 任务完成后刷新页面拉取最新转写/总结
+            window.location.reload();
+            return;
+          }
+          lastState = state;
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      setBadge(initialState);
+      if (initialState && initialState !== 'done' && initialState !== 'idle') {
+        setInterval(pollStatus, 2000);
+      }
     </script>
   </body>
 </html>

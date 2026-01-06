@@ -100,8 +100,30 @@ a { color: inherit; }
   border: 1px solid var(--btn-secondary-border);
   background: #fff;
   cursor: pointer;
+  color: var(--text);
 }
+
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
 .icon-btn:hover { background: #f9fafb; }
+.icon-btn.primary {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+.icon-btn.primary:hover { background: #dbeafe; }
+
+/* danger: 默认更克制，hover 再强调 */
+.icon-btn.danger {
+  background: transparent;
+  border: 1px solid #fecdd3;
+  color: #e11d48;
+}
+.icon-btn.danger:hover { background: #ffe4e6; }
 
 /* upload */
 .upload { margin-top: 18px; }
@@ -137,9 +159,10 @@ tbody tr:hover { background: #fafafa; }
 .table-id { max-width: 220px; }
 .table-filename { max-width: 340px; }
 .ellipsis { display: inline-block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
-.table-actions { width: 220px; }
-.table-status { width: 140px; }
-.table-actions .flex { flex-wrap: nowrap; }
+.table-time { width: 160px; }
+.table-actions { width: 140px; }
+.table-status { width: 120px; }
+.table-actions .flex { flex-wrap: nowrap; justify-content: flex-end; gap: 10px; }
 
 .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
 .badge.success { background: #ecfdf3; color: #16a34a; border: 1px solid #bbf7d0; }
