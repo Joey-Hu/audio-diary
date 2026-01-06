@@ -44,37 +44,60 @@
           <table>
             <thead>
               <tr>
-                <th class="table-id">ID</th>
+                <th class="table-time">时间</th>
                 <th class="table-filename">文件名</th>
-                <th class="table-status">转写</th>
-                <th class="table-status">总结</th>
+                <th class="table-status">状态</th>
                 <th class="table-actions">操作</th>
               </tr>
             </thead>
             <tbody>
               {% for r in records %}
               <tr>
-                <td class="table-id"><span class="ellipsis" title="{{ r.id }}">{{ r.id }}</span></td>
-                <td class="table-filename"><span class="ellipsis" title="{{ r.filename }}">{{ r.filename }}</span></td>
+                <td class="table-time"><span class="subtle">{{ r.created_at_str }}</span></td>
+                <td class="table-filename"><span class="ellipsis" title="{{ r.display_filename }}">{{ r.display_filename }}</span></td>
                 <td class="table-status">
-                  {% if r.has_transcript %}
-                    <span class="badge success">已转写</span>
+                  {# 统一状态列：以任务状态为主，done 时结合文件存在性展示更直观的结果 #}
+                  {% set st = r.task_state %}
+                  {% if st == 'done' %}
+                    {% if r.has_transcript and r.has_summary %}
+                      <span class="badge success task-badge" data-rid="{{ r.id }}" data-state="done">已完成</span>
+                    {% elif r.has_transcript %}
+                      <span class="badge muted task-badge" data-rid="{{ r.id }}" data-state="done">已转写</span>
+                    {% else %}
+                      <span class="badge muted task-badge" data-rid="{{ r.id }}" data-state="done">已完成</span>
+                    {% endif %}
+                  {% elif st == 'error' %}
+                    <span class="badge danger task-badge" data-rid="{{ r.id }}" data-state="error">失败</span>
+                  {% elif st == 'queued' %}
+                    <span class="badge muted task-badge" data-rid="{{ r.id }}" data-state="queued">排队中</span>
+                  {% elif st == 'transcribing' %}
+                    <span class="badge muted task-badge" data-rid="{{ r.id }}" data-state="transcribing">转写中</span>
+                  {% elif st == 'summarizing' %}
+                    <span class="badge muted task-badge" data-rid="{{ r.id }}" data-state="summarizing">总结中</span>
+                  {% elif st == 'running' %}
+                    <span class="badge muted task-badge" data-rid="{{ r.id }}" data-state="running">处理中</span>
                   {% else %}
-                    <span class="badge muted">待处理</span>
-                  {% endif %}
-                </td>
-                <td class="table-status">
-                  {% if r.has_summary %}
-                    <span class="badge success">已总结</span>
-                  {% else %}
-                    <span class="badge muted">待处理</span>
+                    <span class="badge muted task-badge" data-rid="{{ r.id }}" data-state="{{ st }}">未开始</span>
                   {% endif %}
                 </td>
                 <td class="table-actions">
                   <div class="flex">
-                    <a class="button secondary" href="/detail/{{ r.id }}">详情</a>
+                    <a class="icon-btn primary" href="/detail/{{ r.id }}" title="详情" aria-label="详情">
+                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </a>
                     <form action="/delete/{{ r.id }}" method="post" onsubmit="return confirm('确认删除该记录以及所有相关文件？');" style="display:inline;">
-                      <button class="button danger" type="submit">删除</button>
+                      <button class="icon-btn danger" type="submit" title="删除" aria-label="删除">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                          <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                          <path d="M8 6V4h8v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M6 6l1 16h10l1-16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M10 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                          <path d="M14 11v6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                      </button>
                     </form>
                   </div>
                 </td>
@@ -127,6 +150,55 @@
         fileName.textContent = '未选择文件';
         submitBtn.disabled = true;
       });
+
+      // ---- task status polling for history list ----
+      function applyTaskBadgeStyle(el, state) {
+        el.classList.remove('success');
+        el.classList.remove('danger');
+        el.classList.remove('muted');
+        if (state === 'done') {
+          el.classList.add('success');
+        } else if (state === 'error') {
+          el.classList.add('danger');
+        } else {
+          el.classList.add('muted');
+        }
+      }
+
+      const badges = Array.from(document.querySelectorAll('.task-badge'));
+      badges.forEach((el) => {
+        const st = el.getAttribute('data-state') || 'idle';
+        el.textContent = st;
+        applyTaskBadgeStyle(el, st);
+      });
+
+      async function pollOne(el) {
+        const rid = el.getAttribute('data-rid');
+        if (!rid) return;
+        try {
+          const res = await fetch(`/status/${rid}`, { cache: 'no-store' });
+          if (!res.ok) return;
+          const s = await res.json();
+          const st = s.state || 'idle';
+          el.setAttribute('data-state', st);
+          el.textContent = st;
+          applyTaskBadgeStyle(el, st);
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // 仅轮询非 done 的任务
+      const needPoll = badges.filter((el) => {
+        const st = el.getAttribute('data-state') || 'idle';
+        return st !== 'done';
+      });
+
+      if (needPoll.length > 0) {
+        setInterval(() => {
+          needPoll.forEach(pollOne);
+        }, 2000);
+      }
     </script>
   </body>
 </html>
