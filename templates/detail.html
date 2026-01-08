@@ -31,7 +31,13 @@
             </div>
 
           </div>
-          <a class="button secondary" href="/">返回</a>
+          <div style="display:flex; gap:10px;">
+            <form action="/tasks/{{ rid }}/rerun" method="post" style="display:inline;">
+              <input type="hidden" name="mode" value="all" />
+              <button class="button secondary" type="submit">全部重跑</button>
+            </form>
+            <a class="button secondary" href="/">返回</a>
+          </div>
         </div>
         <div class="space-top"></div>
         <audio controls src="{{ audio_url }}"></audio>
@@ -48,10 +54,6 @@
                 <input type="hidden" name="mode" value="transcribe" />
                 <button class="button secondary" type="submit">重新转写</button>
               </form>
-              <form action="/tasks/{{ rid }}/rerun" method="post" style="display:inline;">
-                <input type="hidden" name="mode" value="all" />
-                <button class="button secondary" type="submit">全部重跑</button>
-              </form>
               <button class="button secondary" type="button" onclick="copyText('transcriptText')">复制转写</button>
               <button class="button secondary" type="button" onclick="toggleCollapse('transcriptBlock', this)">展开</button>
             </div>
@@ -67,10 +69,6 @@
                 <input type="hidden" name="mode" value="summarize" />
                 <button class="button secondary" type="submit">重新总结</button>
               </form>
-              <form action="/tasks/{{ rid }}/rerun" method="post" style="display:inline;">
-                <input type="hidden" name="mode" value="all" />
-                <button class="button secondary" type="submit">全部重跑</button>
-              </form>
               <button class="button secondary" type="button" onclick="copyText('summaryText')">复制总结</button>
               <button class="button secondary" type="button" onclick="toggleCollapse('summaryBlock', this)">展开</button>
             </div>
@@ -78,15 +76,9 @@
 
           <pre id="summaryBlock" class="collapsible"><span id="summaryText">{% if summary %}{{ summary }}{% else %}{% if status.state in ['queued','running','transcribing','summarizing'] %}<span id="summaryPlaceholder" class="subtle">处理中…</span>{% endif %}{% endif %}</span></pre>
 
-          <div class="space-top"></div>
-
-          <form action="/detail/{{ rid }}/summary" method="post">
-            <div class="subtle">编辑总结（保存后会覆盖现有总结）</div>
-            <textarea name="summary" style="width:100%; min-height: 180px; margin-top: 8px;" placeholder="在这里编辑总结…">{{ summary }}</textarea>
-            <div class="flex space-top">
-              <button class="button" type="submit">保存总结</button>
-            </div>
-          </form>
+          <div class="space-top">
+            <a class="button" href="/detail/{{ rid }}/summary/edit">编辑总结</a>
+          </div>
         </div>
       </div>
     </div>

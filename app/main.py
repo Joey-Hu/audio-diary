@@ -136,6 +136,28 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request, "records": list_records()})
 
 
+@app.get("/search", response_class=HTMLResponse)
+async def search_page(request: Request, q: Optional[str] = None):
+    """搜索页面：展示搜索框和结果"""
+    results = []
+    show_results = False
+    
+    if q and q.strip():
+        show_results = True
+        try:
+            from app.services.vector_store import search_documents
+            results = search_documents(q, n_results=20)
+        except Exception:
+            pass
+    
+    return templates.TemplateResponse("search.html", {
+        "request": request,
+        "query": q or "",
+        "results": results,
+        "show_results": show_results,
+    })
+
+
 @app.get("/detail/{rid}", response_class=HTMLResponse)
 async def detail(request: Request, rid: str):
     rid = normalize_rid(rid)
@@ -200,7 +222,26 @@ async def upload_audio(request: Request, background_tasks: BackgroundTasks, file
         )
 
 
-@app.post("/detail/{rid}/summary")
+
+@app.get("/detail/{rid}/summary/edit", response_class=HTMLResponse)
+async def edit_summary(request: Request, rid: str):
+    rid = normalize_rid(rid)
+    audio_file = next((p for p in UPLOAD_DIR.glob(f"{rid}.*")), None)
+    if not audio_file:
+        return HTMLResponse("记录不存在", status_code=404)
+    
+    summary_file = DATA_DIR / f"{rid}.summary.txt"
+    summary = summary_file.read_text(encoding="utf-8") if summary_file.exists() else ""
+    
+    return templates.TemplateResponse("summary_edit.html", {
+        "request": request,
+        "rid": rid,
+        "filename": audio_file.name,
+        "summary": summary,
+    })
+
+
+@app.post("/detail/{rid}/summary/save")
 async def update_summary(rid: str, summary: Optional[str] = Form(None)):
     rid = normalize_rid(rid)
     # 校验记录存在（至少音频文件存在）
@@ -215,6 +256,14 @@ async def update_summary(rid: str, summary: Optional[str] = Form(None)):
 @app.post("/delete/{rid}")
 async def delete_record(rid: str):
     rid = normalize_rid(rid)
+    
+    # 从向量库删除
+    try:
+        from app.services.vector_store import delete_document
+        delete_document(rid)
+    except Exception:
+        pass
+    
     # 删除上传音频
     removed = False
     for p in UPLOAD_DIR.glob(f"{rid}.*"):
@@ -287,6 +336,25 @@ def _run_task(rid: str, mode: str):
 
             summary_file.write_text(summary, encoding="utf-8")
 
+        # 更新向量索引（优先使用总结，其次使用转写文本）
+        try:
+            from app.services.vector_store import add_document
+            # 读取元数据
+            meta_path = DATA_DIR / f"{rid}.meta.json"
+            metadata = {}
+            if meta_path.exists():
+                try:
+                    metadata = json.loads(meta_path.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+            
+            # 使用总结或转写文本建立索引
+            index_text = summary if mode in ("summarize", "all") and summary else transcript
+            if index_text:
+                add_document(rid, index_text, metadata)
+        except Exception:
+            pass  # 索引更新失败不影响主流程
+
         write_status(rid, "done", mode=mode, started_at=started_at, message="done")
     except Exception as e:
         write_status(rid, "error", mode=mode, started_at=started_at, error=str(e), message="error")
@@ -309,3 +377,14 @@ async def rerun_task(rid: str, background_tasks: BackgroundTasks, mode: str = Fo
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.post("/admin/rebuild-index")
+async def rebuild_index_endpoint():
+    """管理接口：重建向量索引"""
+    try:
+        from app.services.vector_store import rebuild_index
+        stats = rebuild_index(DATA_DIR, UPLOAD_DIR)
+        return JSONResponse({"status": "success", "stats": stats})
+    except Exception as e:
+        return JSONResponse({"status": "error", "error": str(e)}, status_code=500)
