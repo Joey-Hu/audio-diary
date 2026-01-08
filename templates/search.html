@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>搜索 - Audio Diary</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-inner">
+        <a class="brand" href="/">
+          <span class="logo">AD</span>
+          <h1>Audio Diary</h1>
+        </a>
+        <div class="right subtle">语义搜索</div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="card">
+        <h2>搜索音频日记</h2>
+        <div class="space-top"></div>
+        
+        <form id="searchForm" method="get" action="/search">
+          <div style="display:flex; gap:10px;">
+            <input 
+              type="text" 
+              name="q" 
+              id="searchInput"
+              value="{{ query }}" 
+              placeholder="输入搜索关键词..." 
+              style="flex:1; padding:10px; font-size:14px; border:1px solid #ddd; border-radius:4px;"
+              autofocus
+            />
+            <button class="button" type="submit">搜索</button>
+            <a class="button secondary" href="/">返回</a>
+          </div>
+        </form>
+
+        {% if show_results %}
+        <div class="space-top"></div>
+        <div class="subtle" style="margin-bottom:12px;">
+          {% if results %}
+            找到 {{ results|length }} 条相关记录
+          {% else %}
+            未找到相关记录
+          {% endif %}
+        </div>
+
+        {% if results %}
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          {% for item in results %}
+          <div class="card" style="border:1px solid #e0e0e0;">
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+              <div style="flex:1;">
+                <div class="subtle">{{ item.metadata.get('original_filename', item.rid) }}</div>
+                <div style="margin-top:6px; font-size:14px; color:#666; line-height:1.6;">
+                  {{ item.text[:200] }}{% if item.text|length > 200 %}...{% endif %}
+                </div>
+                <div style="margin-top:8px;">
+                  <span class="badge muted" style="font-size:12px;">相似度: {{ "%.2f"|format(1 - item.distance) }}</span>
+                </div>
+              </div>
+              <div style="margin-left:16px;">
+                <a class="button primary" href="/detail/{{ item.rid }}">查看详情</a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>

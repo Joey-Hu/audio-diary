@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>编辑总结 - Audio Diary</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-inner">
+        <a class="brand" href="/">
+          <span class="logo">AD</span>
+          <h1>Audio Diary</h1>
+        </a>
+        <div class="right subtle">编辑总结</div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="card">
+        <div class="doc-block-title">
+          <div>
+            <div class="subtle">文件</div>
+            <h2 style="margin:6px 0 0; font-size:18px;">{{ filename }}</h2>
+          </div>
+          <a class="button secondary" href="/detail/{{ rid }}">返回详情</a>
+        </div>
+
+        <div class="space-top"></div>
+
+        <form action="/detail/{{ rid }}/summary/save" method="post">
+          <div class="subtle" style="margin-bottom: 8px;">编辑总结内容</div>
+          <textarea 
+            name="summary" 
+            style="width:100%; min-height: 400px; font-size: 14px; padding: 12px; border: 1px solid #ddd; border-radius: 4px;" 
+            placeholder="在这里编辑总结…"
+            autofocus>{{ summary }}</textarea>
+          
+          <div class="flex space-top" style="gap: 10px;">
+            <button class="button" type="submit">保存总结</button>
+            <a class="button secondary" href="/detail/{{ rid }}">取消</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
